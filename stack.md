@@ -22,7 +22,7 @@
       push r16
       ```
   - pop
-    - z.B. Wert aus oberster Stelle vom Stack in Register 17 laden und Stack-Pointer um eine Stelle verringern, sodass Wert beim nächsten push, rcall etc. überschrieben werden kann. Eine Löschung findet noch nicht statt.
+    - z.B. Wert aus oberster Stelle vom Stack in Register 16 laden und Stack-Pointer um eine Stelle verringern, sodass Wert beim nächsten push, rcall etc. überschrieben werden kann. Eine Löschung findet noch nicht statt.
     - Beispiel-Code:
       ```asm
       pop r16
@@ -209,7 +209,7 @@ pop r19
 
 ## Zustand nach Aufruf eines Unterprogrammes
 
-Peek könnte man als Unterprogramm implementieren. Ziel ist es den Wert des obersten Eintrages im Stack anzeigen ohne ihn zu ändern oder zu löschen. Der Wert wird in Register 24 ausgegeben. Damit der Z-Pointer die richtige Speicheradresse kennt, muss das High-Byte in Register 31 geladen werden und das Low-Byte in Register 30. Nun kann man Z-Pointer über ein Offset an die richtige Stelle verschieben. Da der Stack-Pointer über den letzten Eintrag zeigt. Also die Speicheradresse des Stack-Pointers niedriger ist als die Speicheradresse des letzten Eintrages, müssen wir die Speicheradresse noch um eins erhöhen (hier Z+1). Der Befehl rcall legt die Rücksprungadresse, also den Program Counter zum Befehl nach rcall, in den Stack oben.
+Peek könnte man als Unterprogramm implementieren. Ziel ist es den Wert des obersten Eintrages im Stack anzeigen ohne ihn zu ändern oder zu löschen. Der Wert wird in Register 24 ausgegeben. Damit der Z-Pointer die richtige Speicheradresse kennt, muss das High-Byte in Register 31 geladen werden und das Low-Byte in Register 30. Nun kann man Z-Pointer über ein Offset an die richtige Stelle verschieben. Da der Stack-Pointer über den letzten Eintrag zeigt. Also die Speicheradresse des Stack-Pointers niedriger ist als die Speicheradresse des letzten Eintrages, müssen wir die Speicheradresse noch um eins erhöhen (hier Z+1). Der Befehl rcall legt die Rücksprungadresse (High- & Low-Byte), also den Program Counter zum Befehl nach rcall, in den Stack oben. Dadurch wird der Stack-Pointer auch um zwei Byte (statt nur ein Byte mittels push) verringert auf `0x08FB`. Da jedoch das High-Byte für die Rücksprungadresse `0x00` entspricht wird dieses vermutlich einfach übersehen. Durch den letzten push-Befehl wird der Stack-Pointer wieder an die richtige Position gesetzt, da Each erreichen des Befehls `ret` der Stack-Pointer wieder auf den Zustand vor Erreichen des Unterprogrammes gestellt wird. Der Wert `0xFF` in Register 24 dient nur dazu, dass das High-Byte (oberster Eintrag im Stack) mit dem Wert 0 auch erkannt wird, wenn es in das Register 24 übertragen wird durch das Unterprogramm Peek.
 
 ### Beispiel-Code als Unterprogramm 
 
@@ -230,29 +230,73 @@ rcall Peek
 ### Gesamter Code für Beispiel
 
 ```asm
-ldi r16, HIGH(RAMEND)
-out SPH, r16
-ldi r16, LOW(RAMEND)
-out SPL, r16
+; PC = 0x0000
+ldi r16, HIGH(RAMEND)    ; Oberes Byte der RAM-Endadresse laden
 
-ldi r16, 1
-push r16
+; PC = 0x0001
+out SPH, r16             ; Oberes Stackpointer-Register setzen
 
-ldi r17, 2
-push r17
+; PC = 0x0002
+ldi r16, LOW(RAMEND)     ; Unteres Byte der RAM-Endadresse laden
 
-ldi r18, 3
-push r18
+; PC = 0x0003
+out SPL, r16             ; Unteres Stackpointer-Register setzen
+                          ; → Stack zeigt jetzt auf das Ende des RAMs
 
-rcall Peek
+; PC = 0x0004
+ldi r16, 1               ; Wert 1 in r16 laden
 
-pop 19
+; PC = 0x0005
+push r16                 ; 1 auf den Stack legen
 
+; PC = 0x0006
+ldi r17, 2               ; Wert 2 in r17 laden
+
+; PC = 0x0007
+push r17                 ; 2 auf den Stack legen
+
+; PC = 0x0008
+ldi r18, 3               ; Wert 3 in r18 laden
+
+; PC = 0x0009
+push r18                 ; 3 auf den Stack legen
+                          ; Stack (oben → unten): 3, 2, 1
+
+; PC = 0x000A
+pop r19                  ; Obersten Stackwert (3) nach r19 holen
+
+; PC = 0x000B
+pop r20                  ; Nächsten Stackwert (2) nach r20 holen
+                          ; Auf dem Stack verbleibt nur noch die 1
+
+; PC = 0x000C
+ldi r24, 255             ; r24 mit 255 vorbelegen
+
+; PC = 0x000D
+rcall Peek               ; Rücksprungadresse auf den Stack legen
+                          ; und Unterprogramm Peek aufrufen
+
+; PC = 0x000E
+Ende:
+rjmp Ende                ; Endlosschleife
+
+; PC = 0x000F
 Peek:
-    in   r30, SPL
-    in   r31, SPH
-    ldd  r24, Z+1
-    ret
+    ; PC = 0x000F
+    in   r30, SPL        ; Aktuelles Low-Byte des Stackpointers nach ZL
+
+    ; PC = 0x0010
+    in   r31, SPH        ; Aktuelles High-Byte des Stackpointers nach ZH
+                          ; Z zeigt jetzt auf den aktuellen Stackpointer
+
+    ; PC = 0x0011
+    ldd  r24, Z+1        ; Wert an Adresse SP+1 lesen (Peek ohne Pop)
+                          ; Rücksprungadresse liegt auf SP/SP+1,
+                          ; der gelesene Wert hängt vom Stackaufbau ab
+
+    ; PC = 0x0012
+    ret                  ; Rücksprungadresse vom Stack holen
+                          ; und zum Aufrufer zurückkehren
 ```
 
 ## Übersicht Arbeitsspeicher
@@ -261,9 +305,9 @@ Peek:
 | -------:   | -- |---------------------- | ----------- |--|-- | 
 | `0x0100`   | 0 | 0x00                   | || | 
 | ...      |  |                      | || | 
-| `0x08FC`   | 0 | 0x00                   | ← |`0x08`|`0xFC`| 
-| `0x08FD`   | 3 | 0x09                   | | | | 
-| `0x08FE`   | 2 |0x02                   | || | 
+| `0x08FC`   | 0 | 0x00                   | | | |  
+| `0x08FD`   | 0 | 0x00                   | | | | 
+| `0x08FE`   | 14 |0x0E                   | ← |`0x08`|`0xFE`| 
 | `0x08FF`   | 1 | 0x01                   | || | 
 
 ## Übersicht Register
@@ -276,8 +320,9 @@ Peek:
 | `r17`   | 2 | 0x02         |
 | `r18`   | 3 | 0x03         |
 | `r19`   | 3 | 0x03         |
+| `r20`   | 2 | 0x02         |
 | ...  |  |       |
-| `r24`   | 3 | 0x03         |
+| `r24`   | 0 | 0x00         |
 | ...  |  |       |
 | `r30`   | 252 | 0xFC       |
 | `r31`   | 8 | 0x08         |
