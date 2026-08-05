@@ -367,12 +367,11 @@ Peek:
 
 Ausschnitt:
 ```
-...
-00013c e001                      ldi r16, 1
-...
+                                 ; PC = 0x0004
+000004 e001                      ldi r16, 1               ; Wert 1 in r16 laden
 ```
 
-`00013c` entspricht dem Program Counter für den Befehl in der entsprechenden Zeile
+..`0004` entspricht dem Program Counter für den Befehl in der entsprechenden Zeile
 
 ## X-,Y-,Z-Pointer
 
