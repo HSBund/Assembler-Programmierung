@@ -14,7 +14,7 @@ Material zur Vorlesungsreihe Assembler-Programmierung an der HS Bund
 - [Flags im Statusregister](https://github.com/HSBund/Assembler-Programmierung/blob/main/src/statusregister.md)
 - [Zusammenfassung Stack](https://github.com/HSBund/Assembler-Programmierung/blob/main/src/stack.md)
 
-## PDF
+## PDF-Export
 
 - [Befehlsübersicht](https://github.com/HSBund/Assembler-Programmierung/blob/main/dist/commands.pdf)
 - [Flags im Statusregister](https://github.com/HSBund/Assembler-Programmierung/blob/main/dist/statusregister.pdf)
