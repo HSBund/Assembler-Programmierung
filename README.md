@@ -4,6 +4,10 @@
 
 Material zur Vorlesungsreihe Assembler-Programmierung an der HS Bund
 
+- Aktuellste Version: https://github.com/HSBund/Assembler-Programmierung
+- Fehler/Verbesserungen/Ideen: https://github.com/HSBund/Assembler-Programmierung/issues
+- Änderungsvorschläge einreichen: https://github.com/HSBund/Assembler-Programmierung/pulls
+
 ## Online
 
 - [Befehlsübersicht](https://github.com/HSBund/Assembler-Programmierung/blob/main/src/commands.md)
