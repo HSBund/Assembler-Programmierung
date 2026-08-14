@@ -1,0 +1,176 @@
+name: Markdown to PDF
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "src/**/*.md"
+
+permissions:
+  contents: write
+
+jobs:
+  build-pdf:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Pandoc
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pandoc
+
+      - name: Install dependencies
+        run: |
+          npm install github-markdown-css playwright
+          npx playwright install --with-deps chromium
+
+      - name: Convert Markdown files to PDF
+        shell: bash
+        run: |
+          cat > generate-pdf.js <<'EOF'
+          const fs = require('fs');
+          const path = require('path');
+          const { chromium } = require('playwright');
+          const { execSync } = require('child_process');
+
+          const sourceDir = 'src';
+          const outputDir = 'dist';
+
+          function findMarkdownFiles(dir) {
+            const entries = fs.readdirSync(dir, { withFileTypes: true });
+
+            let files = [];
+
+            for (const entry of entries) {
+              const fullPath = path.join(dir, entry.name);
+
+              if (entry.isDirectory()) {
+                files.push(...findMarkdownFiles(fullPath));
+              } else if (entry.name.endsWith('.md')) {
+                files.push(fullPath);
+              }
+            }
+
+            return files;
+          }
+
+          function getOutputPath(mdFile, extension) {
+            const relativePath = path.relative(sourceDir, mdFile);
+            const withoutExtension = relativePath.replace(/\.md$/i, '');
+
+            return path.join(
+              outputDir,
+              withoutExtension + extension
+            );
+          }
+
+          (async () => {
+            const browser = await chromium.launch({ headless: true });
+
+            const markdownCss = fs.readFileSync(
+              'node_modules/github-markdown-css/github-markdown.css',
+              'utf8'
+            );
+
+            const mdFiles = findMarkdownFiles(sourceDir);
+
+            for (const mdFile of mdFiles) {
+              const htmlFile = getOutputPath(mdFile, '.html');
+              const pdfFile = getOutputPath(mdFile, '.pdf');
+
+              fs.mkdirSync(path.dirname(htmlFile), { recursive: true });
+
+              execSync(
+                `pandoc "${mdFile}" -f gfm -t html5 --standalone -o "${htmlFile}"`,
+                { stdio: 'inherit' }
+              );
+
+              let html = fs.readFileSync(htmlFile, 'utf8');
+
+              html = html
+                .replace(
+                  '</head>',
+                  `<style>
+                  ${markdownCss}
+
+                  body {
+                    box-sizing: border-box;
+                    max-width: 980px;
+                    margin: 40px auto;
+                    padding: 45px;
+                  }
+
+                  @media print {
+                    body {
+                      margin: 0;
+                      padding: 0;
+                    }
+                  }
+                  </style></head>`
+                )
+                .replace(
+                  '<body>',
+                  '<body class="markdown-body">'
+                );
+
+              fs.writeFileSync(htmlFile, html);
+
+              const page = await browser.newPage();
+
+              await page.goto(
+                'file://' + path.resolve(htmlFile),
+                { waitUntil: 'networkidle' }
+              );
+
+              await page.pdf({
+                path: pdfFile,
+                format: 'A4',
+                printBackground: true,
+                margin: {
+                  top: '20mm',
+                  right: '20mm',
+                  bottom: '20mm',
+                  left: '20mm'
+                }
+              });
+
+              await page.close();
+
+              console.log(`Created ${pdfFile}`);
+            }
+
+            await browser.close();
+          })();
+          EOF
+
+          node generate-pdf.js
+
+      - name: Remove temporary files
+        run: |
+          find dist -name "*.html" -delete
+          rm -f generate-pdf.js
+
+      - name: Commit generated PDFs
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add dist/
+
+          if git diff --cached --quiet; then
+            echo "No PDF changes to commit."
+            exit 0
+          fi
+
+          git commit -m "docs: update generated PDFs"
+          git push
