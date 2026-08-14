@@ -1,10 +1,5 @@
 # Flags im Statusregister
 
-## Information
-
-- Material für Vorlesungsreihe Assembler-Programmierung an der HS Bund
-- Aktuellste Version: https://github.com/HSBund/Assembler-Programmierung
-
 ## Status Register (SREG) – Bitbelegung
 
 | Bit | 7 | 6 | 5 | 4 | 3 | 2 | 1 | 0 |
