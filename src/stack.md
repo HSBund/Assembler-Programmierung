@@ -203,7 +203,66 @@ pop r19
 
 ## Zustand nach Aufruf eines Unterprogrammes
 
-Peek könnte man als Unterprogramm implementieren. Ziel ist es den Wert des obersten Eintrages im Stack anzeigen ohne ihn zu ändern oder zu löschen. Der Wert wird in Register 24 ausgegeben. Damit der Z-Pointer die richtige Speicheradresse kennt, muss das High-Byte in Register 31 geladen werden und das Low-Byte in Register 30. Nun kann man Z-Pointer über ein Offset an die richtige Stelle verschieben. Da der Stack-Pointer über den letzten Eintrag zeigt. Also die Speicheradresse des Stack-Pointers niedriger ist als die Speicheradresse des letzten Eintrages, müssen wir die Speicheradresse noch um eins erhöhen (hier Z+1). Der Befehl rcall legt die Rücksprungadresse (High- & Low-Byte), also den Program Counter zum Befehl nach rcall, in den Stack oben. Dadurch wird der Stack-Pointer auch um zwei Byte (statt nur ein Byte mittels push) verringert auf `0x08FB`. Da jedoch das High-Byte für die Rücksprungadresse `0x00` entspricht wird dieses vermutlich einfach übersehen. Nach Erreichen des Befehls `ret` wird der Stack-Pointer wieder auf den Zustand vor Erreichen des Unterprogrammes gestellt wird. Der Wert `0xFF` in Register 24 dient nur dazu, dass das High-Byte (oberster Eintrag im Stack) mit dem Wert 0 auch erkannt wird, wenn es in das Register 24 übertragen wird durch das Unterprogramm Peek.
+### Peek als Unterprogramm
+
+`Peek` könnte als Unterprogramm implementiert werden. Ziel ist es, **den Wert des obersten Eintrags im Stack anzuzeigen, ohne ihn zu verändern oder zu löschen**. Der ausgelesene Wert wird anschließend in **Register 24** ausgegeben.
+
+#### Z-Pointer vorbereiten
+
+Damit der **Z-Pointer** auf die richtige Speicheradresse zeigt, müssen zunächst die beiden Bytes der Adresse in die entsprechenden Register geladen werden:
+
+* **Register 31 (ZH):** High-Byte
+* **Register 30 (ZL):** Low-Byte
+
+Anschließend kann der Z-Pointer mithilfe eines Offsets auf die gewünschte Speicheradresse verschoben werden.
+
+#### Position des Stack-Pointers
+
+Der **Stack-Pointer zeigt auf die Speicheradresse direkt unterhalb des letzten Eintrags**. Daher liegt die Adresse des Stack-Pointers um **1 Byte unterhalb** der Adresse des obersten Stack-Eintrags.
+
+Aus diesem Grund muss die Adresse um **1 erhöht** werden:
+
+```text
+Z + 1
+```
+
+Dadurch zeigt der Z-Pointer auf den tatsächlichen obersten Eintrag des Stacks.
+
+#### Verhalten von `rcall`
+
+Der Befehl `rcall` legt die **Rücksprungadresse** auf dem Stack ab. Diese besteht aus dem **High- und Low-Byte des Program Counters (PC)** und zeigt auf den Befehl, der direkt auf `rcall` folgt.
+
+Dadurch wird der Stack-Pointer um **2 Byte** verringert, anstatt wie bei `push` nur um 1 Byte.
+
+In diesem Beispiel wird der Stack-Pointer dadurch auf:
+
+```text
+0x08FB
+```
+
+gesetzt.
+
+Da das High-Byte der Rücksprungadresse hier `0x00` entspricht, wird dieses vermutlich nicht als sichtbarer zusätzlicher Stack-Eintrag berücksichtigt bzw. ist für die Betrachtung des gespeicherten Wertes nicht relevant.
+
+#### Rückkehr mit `ret`
+
+Nach dem Erreichen des Befehls `ret` wird die zuvor gespeicherte Rücksprungadresse vom Stack gelesen. Anschließend wird der **Stack-Pointer wieder auf den Zustand vor dem Aufruf des Unterprogramms** zurückgesetzt.
+
+Damit bleibt der eigentliche Inhalt des Stacks durch `Peek` unverändert.
+
+#### Warum `0xFF` in Register 24?
+
+Der Wert
+
+```text
+0xFF
+```
+
+wird zunächst in **Register 24** gespeichert. Das dient dazu, dass auch der Fall erkannt werden kann, bei dem das **High-Byte des obersten Stack-Eintrags `0x00`** ist.
+
+Würde Register 24 beispielsweise vorher bereits `0x00` enthalten, wäre nicht eindeutig erkennbar, ob tatsächlich `0x00` aus dem Stack gelesen wurde oder ob das Register einfach unverändert geblieben ist.
+
+**Zusammengefasst:** `Peek` liest den obersten Stack-Eintrag aus, ohne den Stack-Inhalt zu verändern oder den Eintrag zu entfernen. Der gelesene Wert wird in **Register 24** zurückgegeben.
 
 ### Beispiel-Code als Unterprogramm 
 
