@@ -4,7 +4,6 @@
 
 - Material für Vorlesungsreihe Assembler-Programmierung an der HS Bund
 - Aktuellste Version: https://github.com/HSBund/Assembler-Programmierung
-- Fehler/Verbesserungen/Ideen: https://github.com/HSBund/Assembler-Programmierung/issues
 
 ## Status Register (SREG) – Bitbelegung
 
