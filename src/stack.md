@@ -1,11 +1,5 @@
 #  Stack mit AVR-Assembler
 
-## Information
-
-- Material für Vorlesungsreihe Assembler-Programmierung an der HS Bund
-- Aktuellste Version: https://github.com/HSBund/Assembler-Programmierung
-- Fehler/Verbesserungen/Ideen: https://github.com/HSBund/Assembler-Programmierung/issues
-
 ## Allgemein
 
 - Der Stack (oder Stapel) ist eine Datenstruktur. Datenstrukturen verwalten und organisieren Daten. 
@@ -340,9 +334,53 @@ Peek:
 |Speicheradresse| 2 Byte<br>= 16 Bit<br>= 1 Word | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 |
 
 
-## Speicherkapazität für Stack/SRAM ausrechnen:
-- 1. Start: 0x1000
-- 2. Ende: 0x08 und 0xFF => 0x08FF == 2303 - 255 (0x100) + 1 = 2048 Byte = 2 kByte
+## Speicherkapazität für Stack/SRAM berechnen
+
+### 1. Startadresse
+
+Die Startadresse ist:
+
+```text
+0x1000
+```
+
+### 2. Endadresse
+
+Die Endadresse setzt sich aus `0x08` und `0xFF` zusammen:
+
+```text
+0x08FF
+```
+
+Das entspricht dezimal:
+
+```text
+0x08FF = 2303
+```
+
+### 3. Speicherkapazität berechnen
+
+Die Anzahl der Bytes berechnet sich mit:
+
+```text
+Endadresse - Startadresse + 1
+```
+
+Also:
+
+```text
+0x08FF - 0x0800 + 1
+= 0x0800
+= 2048 Byte
+```
+
+### 4. Ergebnis
+
+```text
+2048 Byte = 2 kByte
+```
+
+**→ Die Speicherkapazität beträgt 2 kByte.**
 
 ## Speicherbereiche
 
