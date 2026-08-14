@@ -1,13 +1,5 @@
 # AVR-Befehle
 
-## Information
-
-- Material für Vorlesungsreihe Assembler-Programmierung an der HS Bund
-- Aktuellste Version: https://github.com/HSBund/Assembler-Programmierung
-- Fehler/Verbesserungen/Ideen: https://github.com/HSBund/Assembler-Programmierung/issues
-
-
-
 | Mnemonik | Ausgeschrieben | Beschreibung | Operanden / Register | Geänderte SREG-Flags |
 |----------|----------------|--------------|----------------------|----------------------|
 | `ADD` | Add without Carry | Addiert zwei Register und speichert das Ergebnis im Zielregister. | `Rd, Rr` (`R0–R31`) | `H`, `V`, `N`, `Z`, `C`, `S` |
